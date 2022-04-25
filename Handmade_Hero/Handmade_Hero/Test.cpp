@@ -2,12 +2,28 @@
 
 #include <windows.h>
 
-int main(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmdshow)
+/*
+Looooooong comment
+*/
+
+// Function declaration
+void Foo(void);  // Function signature or prototype
+
+
+
+int  CALLBACK  main
+(
+    HINSTANCE hInstance,
+    HINSTANCE hPrevInstance,
+    LPSTR     lpCmdLine,
+    int       nShowCmd
+)
 {
-    return MessageBoxA(NULL, "hello, world", "caption", 0);
+    Foo();
 }
 
+// Function definition
 void Foo(void)
 {
-
+    OutputDebugStringA("This is the first thing debugged\n");
 }
