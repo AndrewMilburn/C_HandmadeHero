@@ -9,6 +9,13 @@ void Foo(void)
 	OutputDebugStringA(foo1);
 }
 
+struct Projectile
+{
+	char unsigned isThisOnFire;	// 1 if it is, 0 if not
+	int damage;
+	int particlesPerSecond;	// Any vfx
+	short howManyCooks;	// Can't have too many!
+};
 
 int CALLBACK WinMain
 (	HINSTANCE hInstance,
@@ -18,6 +25,7 @@ int CALLBACK WinMain
 )
 {
 	int integer;
+	/*
 	// 8 bits = 255 values
 	char smallS;
 	char  unsigned smallU;
@@ -29,11 +37,14 @@ int CALLBACK WinMain
 	// 32 bits ~ 4 billion
 	int largeS;
 	int   unsigned largeU;
+	*/
 	
-	char unsigned test;
+	Projectile test;
 
-	test = 255;
-	test = test + 1;
+	test.isThisOnFire = 1;
+	test.damage = 123456;
+	test.particlesPerSecond = 1234567;
+	test.howManyCooks = 24;
 
 	integer = 5;
 	integer = 5 + 2;
