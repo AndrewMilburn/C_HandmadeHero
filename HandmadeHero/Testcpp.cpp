@@ -41,14 +41,46 @@ int CALLBACK WinMain
 	
 	Projectile test;
 
-	test.isThisOnFire = 1;
-	test.damage = 123456;
-	test.particlesPerSecond = 1234567;
-	test.howManyCooks = 24;
+	int sizeOfChar = sizeof(char unsigned);
+	int sizeOfInt = sizeof(int);
+	int sizeOfShort = sizeof(short);
+	int sizeOfProjectile = sizeof(Projectile);
 
-	integer = 5;
-	integer = 5 + 2;
-	integer = integer + 7;
+	
+	test.isThisOnFire = 1;
+	test.damage = 2;
+	test.particlesPerSecond = 3;
+	test.howManyCooks = 4;
+
+	unsigned short* wrongPointer = (unsigned short*)& test;
+
+	Projectile projectiles[40];
+
+	int whichProjectile = 4;
+	projectiles[whichProjectile];
+
+	Projectile* projectilePointer = projectiles;
+
+	int sizeOfProjectiles = sizeof(projectiles);	// 16 * 40?
+	int sizeOfProjectilePointer = sizeof(projectilePointer);
+	short shortSizeOfPP = sizeof(projectilePointer);
+
+	projectiles[30].damage = 60;
+	//(projectilePointer + 30 * sizeof(Projectile))->damage = 100;
+	(projectilePointer + 30)->damage = 100;
+	((Projectile*)((char*)projectilePointer + 30 * sizeof(Projectile)))->damage = 120;
+
+	int x = 5;
+	int y = 10;
+	int z = 12;
+
+	x = (1 << 4) | (1 << 8);
+	y = (1 << 4) | (1 << 14);
+	x = x ^ y;
+	x = x ^ y;
+
+
+	integer = 5, integer = 5 + 2, integer = integer + 7;
 
 
 	Foo();
