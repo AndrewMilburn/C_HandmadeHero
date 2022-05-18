@@ -84,11 +84,8 @@ WinMain
 {
     WNDCLASS WindowClass = {};
 
-        // TODO: Check if below style flags still relevant
-        WindowClass.style = CS_OWNDC|CS_HREDRAW|CS_VREDRAW;
         WindowClass.lpfnWndProc = MainWindowCallback;
         WindowClass.hInstance = hInstance;
-        //WindowClass.hIcon;
         WindowClass.lpszClassName = "Handmade Hero Window Class";
         
         if (RegisterClass(& WindowClass))
@@ -110,9 +107,10 @@ WinMain
             );
             if (windowHandle)
             {
-                MSG message;
                 for (;;)
                 {
+                    MSG message;
+
                     BOOL messageResult = (GetMessage(&message, 0, 0, 0));
                     if(messageResult > 0)
                     {
