@@ -2,6 +2,13 @@
 
 #include <Windows.h>
 
+#define local_persist static
+#define global_var static
+#define internal_function static
+
+// TODO: Global for now, but we will probably move it some time
+global_var bool running;
+
 LRESULT CALLBACK MainWindowCallback
 (
     HWND window,
@@ -21,12 +28,14 @@ LRESULT CALLBACK MainWindowCallback
 
         case WM_DESTROY:
         {
+            running = false;
             OutputDebugStringA("WM_DESTROY\n");
             break;
         }
 
         case WM_CLOSE:
         {
+            running = false;
             OutputDebugStringA("WM_CLOSE\n");
             break;
         }
@@ -46,7 +55,7 @@ LRESULT CALLBACK MainWindowCallback
             int y = paint.rcPaint.top;
             int w = paint.rcPaint.right - paint.rcPaint.left;
             int h = paint.rcPaint.bottom - paint.rcPaint.top;
-            static DWORD operation = WHITENESS;
+            local_persist DWORD operation = WHITENESS;
             
             PatBlt(deviceContext, x, y, w, h, operation);
             if (operation == WHITENESS)
@@ -107,7 +116,8 @@ WinMain
             );
             if (windowHandle)
             {
-                for (;;)
+                running = true;
+                while(running)
                 {
                     MSG message;
 
