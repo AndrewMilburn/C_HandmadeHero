@@ -2,9 +2,11 @@
 
 #include <windows.h>
 
-LRESULT CALLBACK WindowProc(HWND window, UINT message,
+LRESULT CALLBACK mainWindowCallback(HWND window, UINT message,
                             WPARAM wParam, LPARAM lParam)
 {
+    LRESULT result = 0;
+
     switch (message)
     {
         case WM_SIZE:
@@ -27,32 +29,76 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message,
             OutputDebugString( "WM_ACTIVATEAPP Detected\n" );
             break;
         }
+        case WM_PAINT:
+        {
+            PAINTSTRUCT paint;
+            HDC BeginPaint(window, &paint);
+
+            BOOL EndPaint(window, &paint);
+            break;
+        }
         default:
         {
             //OutputDebugString( "Default Case Detected\n" );
+            result = DefWindowProc(window, message, wParam, lParam);
             break;
         }
     }
-
-        
-
+    return(result);
 }
 
 
-int  CALLBACK  WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance,
+int  CALLBACK  WinMain( HINSTANCE instance, HINSTANCE hPrevInstance,
                         LPSTR lpCmdLine, int nShowCmd)
 {
     //MessageBox(0, "Hello Handmade Hero",
     //           "HMH #001", MB_OK | MB_ICONINFORMATION);
 
     WNDCLASS WindowClass = {};
-        //TODO: Check whether the below flags are needed
-        WindowClass.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
-        WindowClass.lpfnWndProc = ;
-        WindowClass.hInstance = hInstance;
-        //WindowClass.hIcon;
-        WindowClass.lpszClassName="Handmade Hero WindowClass";
+    //todo: Check whether the below flags are needed
+    WindowClass.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
+    WindowClass.lpfnWndProc = mainWindowCallback;
+    WindowClass.hInstance = instance;
+    //WindowClass.hIcon;
+    WindowClass.lpszClassName="Handmade Hero WindowClass";
 
+    if(RegisterClass( &WindowClass ))
+    {
+        HWND windowHandle = CreateWindowEx
+        (
+            0, WindowClass.lpszClassName,
+            "Handmade Hero", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+            CW_USEDEFAULT, CW_USEDEFAULT,
+            CW_USEDEFAULT, CW_USEDEFAULT,
+            0, 0,
+            instance, 0
+        );
+
+        if(windowHandle)
+        {
+            for(;;)
+            {
+                MSG message;
+                BOOL messageResult = GetMessage( &message, 0, 0, 0 );
+                if(messageResult > 0)
+                {
+                    TranslateMessage(&message);
+                    DispatchMessage( &message );
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
+        else
+        {
+            // todo Log fail?
+        }
+    }
+    else
+    {
+        // todo Log fail?
+    }
     return(0);
 }
-
