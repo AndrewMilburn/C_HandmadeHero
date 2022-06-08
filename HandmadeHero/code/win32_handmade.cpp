@@ -32,9 +32,22 @@ LRESULT CALLBACK mainWindowCallback(HWND window, UINT message,
         case WM_PAINT:
         {
             PAINTSTRUCT paint;
-            HDC BeginPaint(window, &paint);
-
-            BOOL EndPaint(window, &paint);
+            HDC deviceContext = BeginPaint(window, &paint);
+            int paintX = paint.rcPaint.left;
+            int paintY = paint.rcPaint.top;
+            int paintWidth = paint.rcPaint.right - paintX;
+            int paintHeight = paint.rcPaint.bottom - paintY;
+            static DWORD operation = WHITENESS;
+            PatBlt( deviceContext, paintX, paintY, paintWidth, paintHeight, operation);
+            if(operation == WHITENESS)
+            {
+                operation = BLACKNESS;
+            }
+            else
+            {
+                operation = WHITENESS;
+            }
+            EndPaint(window, &paint);
             break;
         }
         default:
