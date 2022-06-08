@@ -2,8 +2,44 @@
 
 #include <windows.h>
 
-LRESULT CALLBACK mainWindowCallback(HWND window, UINT message,
-                            WPARAM wParam, LPARAM lParam)
+#define localPersist static
+#define globalVar static
+#define internal static
+
+// todo This is a global for now, but in future we'll call it from within the program
+globalVar bool isRunning;
+
+internal void Win32ResizeDIBSection(int width, int height)
+{
+    HBITMAP CreateDIBSection(
+        HDC              hdc,
+        const BITMAPINFO * pbmi,
+        UINT             usage,
+        VOID * *ppvBits,
+        HANDLE           hSection,
+        DWORD            offset);
+}
+
+internal void Win32UpdateWindow( HWND window, int x, int y, int width, int height )
+{
+    int StretchDIBits(
+        HDC              hdc,
+        int              xDest,
+        int              yDest,
+        int              DestWidth,
+        int              DestHeight,
+        int              xSrc,
+        int              ySrc,
+        int              SrcWidth,
+        int              SrcHeight,
+        const VOID * lpBits,
+        const BITMAPINFO * lpbmi,
+        UINT             iUsage,
+        DWORD            rop);
+}
+
+LRESULT CALLBACK Win32MainWindowCallback(HWND window, UINT message,
+                                        WPARAM wParam, LPARAM lParam)
 {
     LRESULT result = 0;
 
@@ -11,16 +47,25 @@ LRESULT CALLBACK mainWindowCallback(HWND window, UINT message,
     {
         case WM_SIZE:
         {
+            RECT clientRect;
+            GetClientRect(window, &clientRect);
+            int drawWidth = clientRect.right - clientRect.left;
+            int drawHeight = clientRect.bottom - clientRect.top;
+            Win32ResizeDIBSection(drawWidth, drawHeight);
             OutputDebugString( "WM_SIZE Detected\n" );
             break;
         }
         case WM_DESTROY:
         {
+            // todo Handle this with message to user / saving code etc.
+            isRunning = false;
             OutputDebugString( "WM_DESTROY Detected\n" );
             break;
         }
         case WM_CLOSE:
         {
+            // todo Handle this with message to user / saving code etc.
+            isRunning = false;
             OutputDebugString( "WM_CLOSE Detected\n" );
             break;
         }
@@ -37,16 +82,6 @@ LRESULT CALLBACK mainWindowCallback(HWND window, UINT message,
             int paintY = paint.rcPaint.top;
             int paintWidth = paint.rcPaint.right - paintX;
             int paintHeight = paint.rcPaint.bottom - paintY;
-            static DWORD operation = WHITENESS;
-            PatBlt( deviceContext, paintX, paintY, paintWidth, paintHeight, operation);
-            if(operation == WHITENESS)
-            {
-                operation = BLACKNESS;
-            }
-            else
-            {
-                operation = WHITENESS;
-            }
             EndPaint(window, &paint);
             break;
         }
@@ -68,9 +103,7 @@ int  CALLBACK  WinMain( HINSTANCE instance, HINSTANCE hPrevInstance,
     //           "HMH #001", MB_OK | MB_ICONINFORMATION);
 
     WNDCLASS WindowClass = {};
-    //todo: Check whether the below flags are needed
-    WindowClass.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
-    WindowClass.lpfnWndProc = mainWindowCallback;
+    WindowClass.lpfnWndProc = Win32MainWindowCallback;
     WindowClass.hInstance = instance;
     //WindowClass.hIcon;
     WindowClass.lpszClassName="Handmade Hero WindowClass";
@@ -89,7 +122,8 @@ int  CALLBACK  WinMain( HINSTANCE instance, HINSTANCE hPrevInstance,
 
         if(windowHandle)
         {
-            for(;;)
+            isRunning = true;
+            while(isRunning)
             {
                 MSG message;
                 BOOL messageResult = GetMessage( &message, 0, 0, 0 );
