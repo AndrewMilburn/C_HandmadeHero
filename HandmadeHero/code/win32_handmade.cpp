@@ -9,33 +9,37 @@
 // todo This is a global for now, but in future we'll call it from within the program
 globalVar bool isRunning;
 
-internal void Win32ResizeDIBSection(int width, int height)
+// Create the Back-Buffer
+internal void Win32ResizeDIBSection( int width, int height )
 {
-    HBITMAP CreateDIBSection(
-        HDC              hdc,
-        const BITMAPINFO * pbmi,
-        UINT             usage,
-        VOID * *ppvBits,
-        HANDLE           hSection,
-        DWORD            offset);
+    BITMAPINFO bitmapInfo;
+    bitmapInfo.bmiHeader.biSize = sizeof( bitmapInfo.bmiHeader );
+    bitmapInfo.bmiHeader.biWidth = width;
+    bitmapInfo.bmiHeader.biHeight = height;
+    bitmapInfo.bmiHeader.biPlanes = 1;
+    bitmapInfo.bmiHeader.biBitCount = 32;
+    bitmapInfo.bmiHeader.biCompression = BI_RGB;
+    bitmapInfo.bmiHeader.biSizeImage = 0;
+    bitmapInfo.bmiHeader.biXPelsPerMeter = 0;
+    bitmapInfo.bmiHeader.biYPelsPerMeter = 0;
+    bitmapInfo.bmiHeader.biClrUsed = 0;
+    bitmapInfo.bmiHeader.biClrImportant = 0;
+
+    void* BitmapMemory;
+    HBITMAP = CreateDIBSection(
+                                HDC              hdc, &bitmapInfo,
+                                DIB_RGB_COLORS, VOID * *ppvBits,
+                                0, 0);
 }
 
-internal void Win32UpdateWindow( HWND window, int x, int y, int width, int height )
+// Write to the Back-Buffer
+internal void Win32UpdateWindow( HDC surface, int x, int y, int width, int height )
 {
-    int StretchDIBits(
-        HDC              hdc,
-        int              xDest,
-        int              yDest,
-        int              DestWidth,
-        int              DestHeight,
-        int              xSrc,
-        int              ySrc,
-        int              SrcWidth,
-        int              SrcHeight,
-        const VOID * lpBits,
-        const BITMAPINFO * lpbmi,
-        UINT             iUsage,
-        DWORD            rop);
+    StretchDIBits(surface, 
+                  x, y, width, height,
+                  x, y, width, height,
+                  const VOID * lpBits, const BITMAPINFO * lpbmi,
+                  DIB_RGB_COLORS, SRCCOPY );
 }
 
 LRESULT CALLBACK Win32MainWindowCallback(HWND window, UINT message,
