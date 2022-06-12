@@ -8,24 +8,32 @@
 
 // todo This is a global for now, but in future we'll call it from within the program
 globalVar bool isRunning;
+globalVar BITMAPINFO bitmapInfo;
+globalVar void* bitmapMemory;
+globalVar HBITMAP bitmapHandle;
+globalVar HDC deviceContext;
+
 
 // Create the Back-Buffer
 internal void Win32ResizeDIBSection( int width, int height )
 {
-    BITMAPINFO bitmapInfo;
+    // todo - Bulletproof this
+    // maybe don't free first - free after and if that fails free first
+
+    // Free the DIBSection
+    if(bitmapHandle)
+    {
+        DeleteObject( bitmapHandle );
+    }
     bitmapInfo.bmiHeader.biSize = sizeof( bitmapInfo.bmiHeader );
     bitmapInfo.bmiHeader.biWidth = width;
     bitmapInfo.bmiHeader.biHeight = height;
     bitmapInfo.bmiHeader.biPlanes = 1;
     bitmapInfo.bmiHeader.biBitCount = 32;
     bitmapInfo.bmiHeader.biCompression = BI_RGB;
-    bitmapInfo.bmiHeader.biSizeImage = 0;
-    bitmapInfo.bmiHeader.biXPelsPerMeter = 0;
-    bitmapInfo.bmiHeader.biYPelsPerMeter = 0;
-    bitmapInfo.bmiHeader.biClrUsed = 0;
-    bitmapInfo.bmiHeader.biClrImportant = 0;
 
-    void* BitmapMemory;
+    HDC deviceContext = CreateCompatibleDC( 0 );
+
     HBITMAP = CreateDIBSection(
                                 HDC              hdc, &bitmapInfo,
                                 DIB_RGB_COLORS, VOID * *ppvBits,
@@ -33,9 +41,9 @@ internal void Win32ResizeDIBSection( int width, int height )
 }
 
 // Write to the Back-Buffer
-internal void Win32UpdateWindow( HDC surface, int x, int y, int width, int height )
+internal void Win32UpdateWindow( HDC backBuffer, int x, int y, int width, int height )
 {
-    StretchDIBits(surface, 
+    StretchDIBits(backBuffer, 
                   x, y, width, height,
                   x, y, width, height,
                   const VOID * lpBits, const BITMAPINFO * lpbmi,
