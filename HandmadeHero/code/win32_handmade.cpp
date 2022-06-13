@@ -8,10 +8,11 @@
 
 // todo This is a global for now, but in future we'll call it from within the program
 globalVar bool isRunning;
+
 globalVar BITMAPINFO bitmapInfo;
 globalVar void* bitmapMemory;
 globalVar HBITMAP bitmapHandle;
-globalVar HDC deviceContext;
+globalVar HDC bitmapDeviceContext;
 
 
 // Create the Back-Buffer
@@ -25,6 +26,13 @@ internal void Win32ResizeDIBSection( int width, int height )
     {
         DeleteObject( bitmapHandle );
     }
+    
+    if(!bitmapDeviceContext)
+    {
+        // todo - Can we keep this, or will we ever need to recreate it
+        bitmapDeviceContext = CreateCompatibleDC( 0 );
+    }
+    
     bitmapInfo.bmiHeader.biSize = sizeof( bitmapInfo.bmiHeader );
     bitmapInfo.bmiHeader.biWidth = width;
     bitmapInfo.bmiHeader.biHeight = height;
@@ -32,12 +40,10 @@ internal void Win32ResizeDIBSection( int width, int height )
     bitmapInfo.bmiHeader.biBitCount = 32;
     bitmapInfo.bmiHeader.biCompression = BI_RGB;
 
-    HDC deviceContext = CreateCompatibleDC( 0 );
 
-    HBITMAP = CreateDIBSection(
-                                HDC              hdc, &bitmapInfo,
-                                DIB_RGB_COLORS, VOID * *ppvBits,
-                                0, 0);
+    bitmapHandle = CreateDIBSection(bitmapDeviceContext, &bitmapInfo,
+                                    DIB_RGB_COLORS, &bitmapMemory,
+                                    0, 0);
 }
 
 // Write to the Back-Buffer
@@ -46,7 +52,7 @@ internal void Win32UpdateWindow( HDC backBuffer, int x, int y, int width, int he
     StretchDIBits(backBuffer, 
                   x, y, width, height,
                   x, y, width, height,
-                  const VOID * lpBits, const BITMAPINFO * lpbmi,
+                  &bitmapMemory, &bitmapInfo,
                   DIB_RGB_COLORS, SRCCOPY );
 }
 
