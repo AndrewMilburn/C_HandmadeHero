@@ -46,13 +46,13 @@ internal void Win32ResizeDIBSection( int width, int height )
                                     0, 0);
 }
 
-// Write to the Back-Buffer
+// Write From the Back-Buffer
 internal void Win32UpdateWindow( HDC backBuffer, int x, int y, int width, int height )
 {
     StretchDIBits(backBuffer, 
                   x, y, width, height,
                   x, y, width, height,
-                  &bitmapMemory, &bitmapInfo,
+                  bitmapMemory, &bitmapInfo,
                   DIB_RGB_COLORS, SRCCOPY );
 }
 
@@ -73,13 +73,7 @@ LRESULT CALLBACK Win32MainWindowCallback(HWND window, UINT message,
             OutputDebugString( "WM_SIZE Detected\n" );
             break;
         }
-        case WM_DESTROY:
-        {
-            // todo Handle this with message to user / saving code etc.
-            isRunning = false;
-            OutputDebugString( "WM_DESTROY Detected\n" );
-            break;
-        }
+
         case WM_CLOSE:
         {
             // todo Handle this with message to user / saving code etc.
@@ -92,6 +86,13 @@ LRESULT CALLBACK Win32MainWindowCallback(HWND window, UINT message,
             OutputDebugString( "WM_ACTIVATEAPP Detected\n" );
             break;
         }
+        case WM_DESTROY:
+        {
+            // todo Handle this with message to user / saving code etc.
+            isRunning = false;
+            OutputDebugString( "WM_DESTROY Detected\n" );
+            break;
+        }
         case WM_PAINT:
         {
             PAINTSTRUCT paint;
@@ -100,6 +101,7 @@ LRESULT CALLBACK Win32MainWindowCallback(HWND window, UINT message,
             int paintY = paint.rcPaint.top;
             int paintWidth = paint.rcPaint.right - paintX;
             int paintHeight = paint.rcPaint.bottom - paintY;
+            Win32UpdateWindow(deviceContext, paintX, paintY, paintWidth, paintHeight );
             EndPaint(window, &paint);
             break;
         }
@@ -114,8 +116,8 @@ LRESULT CALLBACK Win32MainWindowCallback(HWND window, UINT message,
 }
 
 
-int  CALLBACK  WinMain( HINSTANCE instance, HINSTANCE hPrevInstance,
-                        LPSTR lpCmdLine, int nShowCmd)
+int  CALLBACK  WinMain( HINSTANCE instance, HINSTANCE prevInstance,
+                        LPSTR cmdLine, int showCmd)
 {
     //MessageBox(0, "Hello Handmade Hero",
     //           "HMH #001", MB_OK | MB_ICONINFORMATION);
