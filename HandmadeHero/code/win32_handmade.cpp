@@ -11,8 +11,6 @@ globalVar bool isRunning;
 
 globalVar BITMAPINFO bitmapInfo;
 globalVar void* bitmapMemory;
-globalVar HBITMAP bitmapHandle;
-globalVar HDC bitmapDeviceContext;
 
 
 // Create the Back-Buffer
@@ -21,18 +19,11 @@ internal void Win32ResizeDIBSection( int width, int height )
     // todo - Bulletproof this
     // maybe don't free first - free after and if that fails free first
 
-    // Free the DIBSection
-    if(bitmapHandle)
+    if(bitmapMemory)
     {
-        DeleteObject( bitmapHandle );
+        VirtualFree(bitmapMemory, 0, MEM_RELEASE);
     }
-    
-    if(!bitmapDeviceContext)
-    {
-        // todo - Can we keep this, or will we ever need to recreate it
-        bitmapDeviceContext = CreateCompatibleDC( 0 );
-    }
-    
+
     bitmapInfo.bmiHeader.biSize = sizeof( bitmapInfo.bmiHeader );
     bitmapInfo.bmiHeader.biWidth = width;
     bitmapInfo.bmiHeader.biHeight = height;
@@ -40,10 +31,9 @@ internal void Win32ResizeDIBSection( int width, int height )
     bitmapInfo.bmiHeader.biBitCount = 32;
     bitmapInfo.bmiHeader.biCompression = BI_RGB;
 
-
-    bitmapHandle = CreateDIBSection(bitmapDeviceContext, &bitmapInfo,
-                                    DIB_RGB_COLORS, &bitmapMemory,
-                                    0, 0);
+    int bytesPerPixel = 4;
+    int bitmapMemorySize = bytesPerPixel * (width * height);
+    bitmapMemory = VirtualAlloc(0, bitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
 }
 
 // Write From the Back-Buffer
