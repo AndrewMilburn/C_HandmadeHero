@@ -1,10 +1,21 @@
 // win32_handmade.cpp
 
 #include <windows.h>
+#include <stdint.h>
 
 #define localPersist static
 #define globalVar static
 #define internal static
+
+typedef uint8_t uint8;
+typedef uint16_t uint16;
+typedef uint32_t uint32;
+typedef uint64_t uint64;
+
+typedef int8_t int8;
+typedef int16_t int16;
+typedef int32_t int32;
+typedef int64_t int64;
 
 // todo This is a global for now, but in future we'll call it from within the program
 globalVar bool isRunning;
@@ -41,6 +52,29 @@ internal void Win32ResizeDIBSection( int width, int height )
     int bitmapMemorySize = bytesPerPixel * (bitmapWidth * bitmapHeight);
     bitmapMemory = VirtualAlloc(0, bitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
 
+    int pitch = bitmapWidth * bytesPerPixel;
+    uint8* row = (uint8*)bitmapMemory;
+    for(int y = 0; y < bitmapHeight; y++)
+    {
+        uint8* pixel = (uint8*)row;
+        for(int x = 0; x < bitmapWidth; x++)
+        {
+            /*
+            Pixel in memory - RR GG BB xx ?
+            Apparently not - Actually BB GG RR xx
+            */
+            *pixel = 0;
+            ++pixel;
+            *pixel = 0;
+            ++pixel;
+            *pixel = 255;
+            ++pixel;
+            *pixel = 0;
+            ++pixel;
+
+        }
+        row += pitch;
+    }
 }
 
 // Write From the Back-Buffer
