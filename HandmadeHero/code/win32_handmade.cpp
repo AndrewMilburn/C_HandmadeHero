@@ -24,11 +24,42 @@ globalVar BITMAPINFO bitmapInfo;
 globalVar void* bitmapMemory;
 globalVar int bitmapWidth;
 globalVar int bitmapHeight;
+globalVar int bytesPerPixel = 4;
 
+internal void
+RenderWierdGradient(int xOffset, int yOffset)
+{
+    int width = bitmapWidth;
+    int height = bitmapHeight;
+    int pitch = width * bytesPerPixel;
+    uint8* row = (uint8*)bitmapMemory;
 
+    for(int y = 0; y < height; y++)
+    {
+        uint8* pixel = (uint8*)row;
+        for(int x = 0; x < width; x++)
+        {
+            /*
+            Pixel in memory - RR GG BB xx ?
+            Apparently not - Actually BB GG RR xx
+            */
+            *pixel = (uint8)(x + xOffset);
+            ++pixel;
+            *pixel = (uint8)(y + yOffset);
+            ++pixel;
+            *pixel = 0;
+            ++pixel;
+            *pixel = 0;
+            ++pixel;
 
+        }
+        row += pitch;
+    }
+
+}
 // Create the Back-Buffer
-internal void Win32ResizeDIBSection( int width, int height )
+internal void
+Win32ResizeDIBSection( int width, int height )
 {
     // todo - Bulletproof this
     // maybe don't free first - free after and if that fails free first
@@ -48,37 +79,15 @@ internal void Win32ResizeDIBSection( int width, int height )
     bitmapInfo.bmiHeader.biBitCount = 32;
     bitmapInfo.bmiHeader.biCompression = BI_RGB;
 
-    int bytesPerPixel = 4;
     int bitmapMemorySize = bytesPerPixel * (bitmapWidth * bitmapHeight);
     bitmapMemory = VirtualAlloc(0, bitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
 
-    int pitch = bitmapWidth * bytesPerPixel;
-    uint8* row = (uint8*)bitmapMemory;
-    for(int y = 0; y < bitmapHeight; y++)
-    {
-        uint8* pixel = (uint8*)row;
-        for(int x = 0; x < bitmapWidth; x++)
-        {
-            /*
-            Pixel in memory - RR GG BB xx ?
-            Apparently not - Actually BB GG RR xx
-            */
-            *pixel = 0;
-            ++pixel;
-            *pixel = 0;
-            ++pixel;
-            *pixel = 255;
-            ++pixel;
-            *pixel = 0;
-            ++pixel;
-
-        }
-        row += pitch;
-    }
+    RenderWierdGradient( 128, 0 );
 }
 
 // Write From the Back-Buffer
-internal void Win32UpdateWindow(HDC backBuffer, RECT *windowRect, int x, int y, int width, int height )
+internal void
+Win32UpdateWindow(HDC backBuffer, RECT *windowRect, int x, int y, int width, int height )
 {
     int windowWidth = windowRect->right - windowRect->left;
     int windowHeight = windowRect->bottom - windowRect->top;
@@ -93,7 +102,8 @@ internal void Win32UpdateWindow(HDC backBuffer, RECT *windowRect, int x, int y, 
                   DIB_RGB_COLORS, SRCCOPY );
 }
 
-LRESULT CALLBACK Win32MainWindowCallback(HWND window, UINT message,
+LRESULT CALLBACK
+Win32MainWindowCallback(HWND window, UINT message,
                                         WPARAM wParam, LPARAM lParam)
 {
     LRESULT result = 0;
@@ -157,7 +167,8 @@ LRESULT CALLBACK Win32MainWindowCallback(HWND window, UINT message,
 }
 
 
-int  CALLBACK  WinMain( HINSTANCE instance, HINSTANCE prevInstance,
+int  CALLBACK 
+WinMain( HINSTANCE instance, HINSTANCE prevInstance,
                         LPSTR cmdLine, int showCmd)
 {
     //MessageBox(0, "Hello Handmade Hero",
@@ -187,15 +198,14 @@ int  CALLBACK  WinMain( HINSTANCE instance, HINSTANCE prevInstance,
             while(isRunning)
             {
                 MSG message;
-                BOOL messageResult = GetMessage( &message, 0, 0, 0 );
-                if(messageResult > 0)
+                while(PeekMessage( &message, 0, 0, 0, PM_REMOVE ))
                 {
-                    TranslateMessage(&message);
+                    if(message.message == WM_QUIT)
+                    {
+                        isRunning = false;
+                    }
+                    TranslateMessage( &message );
                     DispatchMessage( &message );
-                }
-                else
-                {
-                    break;
                 }
             }
         }
