@@ -27,7 +27,7 @@ globalVar int bitmapHeight;
 globalVar int bytesPerPixel = 4;
 
 internal void
-RenderWierdGradient(int xOffset, int yOffset)
+RenderWeirdGradient(int xOffset, int yOffset)
 {
     int width = bitmapWidth;
     int height = bitmapHeight;
@@ -81,8 +81,7 @@ Win32ResizeDIBSection( int width, int height )
 
     int bitmapMemorySize = bytesPerPixel * (bitmapWidth * bitmapHeight);
     bitmapMemory = VirtualAlloc(0, bitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
-
-    RenderWierdGradient( 128, 0 );
+    // todo - Probably Clear this to Black later
 }
 
 // Write From the Back-Buffer
@@ -194,6 +193,8 @@ WinMain( HINSTANCE instance, HINSTANCE prevInstance,
 
         if(windowHandle)
         {
+            int offsetX = 0;
+            int offsetY = 0;
             isRunning = true;
             while(isRunning)
             {
@@ -207,6 +208,17 @@ WinMain( HINSTANCE instance, HINSTANCE prevInstance,
                     TranslateMessage( &message );
                     DispatchMessage( &message );
                 }
+                 
+                RenderWeirdGradient( offsetX, offsetY );
+                HDC deviceContext = GetDC( windowHandle );
+                RECT clientRect;
+                GetClientRect( windowHandle, &clientRect );
+                int windowWidth = clientRect.right - clientRect.left;
+                int windowHeight = clientRect.bottom - clientRect.top;
+                Win32UpdateWindow( deviceContext, &clientRect, 0, 0, windowWidth, windowHeight );
+                ReleaseDC( windowHandle, deviceContext);
+                
+                ++offsetX;
             }
         }
         else
