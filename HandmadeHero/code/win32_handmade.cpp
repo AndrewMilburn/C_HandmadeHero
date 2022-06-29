@@ -36,22 +36,20 @@ RenderWeirdGradient(int xOffset, int yOffset)
 
     for(int y = 0; y < height; y++)
     {
-        uint8* pixel = (uint8*)row;
+        uint32* pixel = (uint32*)row;
         for(int x = 0; x < width; x++)
         {
             /*
             Pixel in memory - RR GG BB xx ?
             Apparently not - Actually BB GG RR xx
+            Then putting it in a 32-bit Register (little endian, member?)
+            Becomes xx RR GG BB
             */
-            *pixel = (uint8)(x + xOffset);
-            ++pixel;
-            *pixel = (uint8)(y + yOffset);
-            ++pixel;
-            *pixel = 0;
-            ++pixel;
-            *pixel = 0;
-            ++pixel;
 
+            uint8 blue = (x + xOffset);
+            uint8 green = (y + yOffset);
+
+            *pixel++ = ((green << 8) | blue);   // Shift Green into place
         }
         row += pitch;
     }
@@ -103,7 +101,7 @@ Win32UpdateWindow(HDC backBuffer, RECT *windowRect, int x, int y, int width, int
 
 LRESULT CALLBACK
 Win32MainWindowCallback(HWND window, UINT message,
-                                        WPARAM wParam, LPARAM lParam)
+                        WPARAM wParam, LPARAM lParam)
 {
     LRESULT result = 0;
 
@@ -168,7 +166,7 @@ Win32MainWindowCallback(HWND window, UINT message,
 
 int  CALLBACK 
 WinMain( HINSTANCE instance, HINSTANCE prevInstance,
-                        LPSTR cmdLine, int showCmd)
+         LPSTR cmdLine, int showCmd)
 {
     //MessageBox(0, "Hello Handmade Hero",
     //           "HMH #001", MB_OK | MB_ICONINFORMATION);
@@ -184,7 +182,8 @@ WinMain( HINSTANCE instance, HINSTANCE prevInstance,
         HWND windowHandle = CreateWindowEx
         (
             0, WindowClass.lpszClassName,
-            "Handmade Hero", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+            "Handmade Hero",
+            WS_OVERLAPPEDWINDOW | WS_VISIBLE,
             CW_USEDEFAULT, CW_USEDEFAULT,
             CW_USEDEFAULT, CW_USEDEFAULT,
             0, 0,
