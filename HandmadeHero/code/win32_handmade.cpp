@@ -20,24 +20,25 @@ typedef int64_t int64;
 // todo This is a global for now, but in future we'll call it from within the program
 globalVar bool isRunning;
 
-globalVar BITMAPINFO bitmapInfo;
-globalVar void* bitmapMemory;
-globalVar int bitmapWidth;
-globalVar int bitmapHeight;
-globalVar int bytesPerPixel = 4;
+struct win32BackBuffer
+{
+    BITMAPINFO bitmapInfo;
+    void* bitmapMemory;
+    int bitmapWidth;
+    int bitmapHeight;
+    int bitmapPitch;
+    int bytesPerPixel = 4;
+};
 
 internal void
-RenderWeirdGradient(int xOffset, int yOffset)
+RenderWeirdGradient(win32BackBuffer buffer, int xOffset, int yOffset)
 {
-    int width = bitmapWidth;
-    int height = bitmapHeight;
-    int pitch = width * bytesPerPixel;
-    uint8* row = (uint8*)bitmapMemory;
+    uint8* row = (uint8*)buffer.bitmapMemory;
 
-    for(int y = 0; y < height; y++)
+    for(int y = 0; y < buffer.bitmapHeight; y++)
     {
         uint32* pixel = (uint32*)row;
-        for(int x = 0; x < width; x++)
+        for(int x = 0; x < buffer.bitmapWidth; x++)
         {
             /*
             Pixel in memory - RR GG BB xx ?
@@ -51,43 +52,43 @@ RenderWeirdGradient(int xOffset, int yOffset)
 
             *pixel++ = ((green << 8) | blue);   // Shift Green into place
         }
-        row += pitch;
+        row += buffer.bitmapPitch;
     }
 
 }
 // Create the Back-Buffer
 internal void
-Win32ResizeDIBSection( int width, int height )
+Win32ResizeDIBSection(win32BackBuffer *buffer, int width, int height )
 {
     // todo - Bulletproof this
     // maybe don't free first - free after and if that fails free first
 
-    if(bitmapMemory)
+    if(buffer.bitmapMemory)
     {
-        VirtualFree(bitmapMemory, 0, MEM_RELEASE);
+        VirtualFree( buffer.bitmapMemory, 0, MEM_RELEASE);
     }
 
-    bitmapWidth = width;
-    bitmapHeight = height;
+    buffer.bitmapWidth = width;
+    buffer.bitmapHeight = height;
+    buffer.bitmapInfo.bmiHeader.biSize = sizeof( buffer.bitmapInfo.bmiHeader );
+    buffer.bitmapInfo.bmiHeader.biWidth = buffer.bitmapWidth;
+    buffer.bitmapInfo.bmiHeader.biHeight = -buffer.bitmapHeight;
+    buffer.bitmapInfo.bmiHeader.biPlanes = 1;
+    buffer.bitmapInfo.bmiHeader.biBitCount = 32;
+    buffer.bitmapInfo.bmiHeader.biCompression = BI_RGB;
 
-    bitmapInfo.bmiHeader.biSize = sizeof( bitmapInfo.bmiHeader );
-    bitmapInfo.bmiHeader.biWidth = bitmapWidth;
-    bitmapInfo.bmiHeader.biHeight = -bitmapHeight;
-    bitmapInfo.bmiHeader.biPlanes = 1;
-    bitmapInfo.bmiHeader.biBitCount = 32;
-    bitmapInfo.bmiHeader.biCompression = BI_RGB;
-
-    int bitmapMemorySize = bytesPerPixel * (bitmapWidth * bitmapHeight);
-    bitmapMemory = VirtualAlloc(0, bitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
+    int bitmapMemorySize = buffer.bytesPerPixel * (buffer.bitmapWidth * buffer.bitmapHeight);
+    buffer.bitmapMemory = VirtualAlloc(0, bitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
     // todo - Probably Clear this to Black later
+    buffer.bitmapPitch = width * buffer.bytesPerPixel;
 }
 
 // Write From the Back-Buffer
 internal void
-Win32UpdateWindow(HDC backBuffer, RECT *windowRect, int x, int y, int width, int height )
+Win32UpdateWindow(HDC backBuffer, RECT windowRect, int x, int y, int width, int height )
 {
-    int windowWidth = windowRect->right - windowRect->left;
-    int windowHeight = windowRect->bottom - windowRect->top;
+    int windowWidth = windowRect.right - windowRect.left;
+    int windowHeight = windowRect.bottom - windowRect.top;
     StretchDIBits(backBuffer,
         /*
                   x, y, width, height,
@@ -149,7 +150,7 @@ Win32MainWindowCallback(HWND window, UINT message,
             RECT clientRect;
             GetClientRect( window, &clientRect );
 
-            Win32UpdateWindow(deviceContext, &clientRect, paintX, paintY, paintWidth, paintHeight );
+            Win32UpdateWindow(deviceContext, clientRect, paintX, paintY, paintWidth, paintHeight );
             EndPaint(window, &paint);
             break;
         }
@@ -172,6 +173,7 @@ WinMain( HINSTANCE instance, HINSTANCE prevInstance,
     //           "HMH #001", MB_OK | MB_ICONINFORMATION);
 
     WNDCLASS WindowClass = {};
+    WindowClass.style = CS_HREDRAW | CS_VREDRAW;
     WindowClass.lpfnWndProc = Win32MainWindowCallback;
     WindowClass.hInstance = instance;
     //WindowClass.hIcon;
@@ -214,7 +216,7 @@ WinMain( HINSTANCE instance, HINSTANCE prevInstance,
                 GetClientRect( windowHandle, &clientRect );
                 int windowWidth = clientRect.right - clientRect.left;
                 int windowHeight = clientRect.bottom - clientRect.top;
-                Win32UpdateWindow( deviceContext, &clientRect, 0, 0, windowWidth, windowHeight );
+                Win32UpdateWindow( deviceContext, clientRect, 0, 0, windowWidth, windowHeight );
                 ReleaseDC( windowHandle, deviceContext);
                 
                 ++offsetX;
