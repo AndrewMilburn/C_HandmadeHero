@@ -17,9 +17,6 @@ typedef int16_t int16;
 typedef int32_t int32;
 typedef int64_t int64;
 
-// todo This is a global for now, but in future we'll call it from within the program
-globalVar bool isRunning;
-
 struct win32BackBuffer
 {
     BITMAPINFO bitmapInfo;
@@ -30,7 +27,28 @@ struct win32BackBuffer
     int bytesPerPixel;
 };
 
+struct win32WindowDimension
+{
+    int dimX;
+    int dimY;
+};
+
+// todo This is a global for now, but in future we'll call it from within the program
+globalVar bool isRunning;
 globalVar win32BackBuffer globalBackBuffer;
+
+win32WindowDimension
+Win32GetWindowDimension( HWND window )
+{
+    win32WindowDimension result;
+    RECT clientRect;
+    GetClientRect( window, &clientRect );
+    result.dimX = clientRect.right - clientRect.left;
+    result.dimY = clientRect.bottom - clientRect.top;
+
+    return(result);
+}
+
 
 internal void
 RenderWeirdGradient(win32BackBuffer buffer, int xOffset, int yOffset)
@@ -88,11 +106,9 @@ Win32ResizeDIBSection(win32BackBuffer *buffer, int width, int height )
 
 // Write From the Back-Buffer
 internal void
-Win32BlitToWindow(HDC deviceContext, RECT windowRect,win32BackBuffer buffer,
-                  int x, int y, int width, int height )
+Win32BlitToWindow(HDC deviceContext, int windowWidth, int windowHeight,
+                  win32BackBuffer buffer, int x, int y, int width, int height )
 {
-    int windowWidth = windowRect.right - windowRect.left;
-    int windowHeight = windowRect.bottom - windowRect.top;
     StretchDIBits(deviceContext,
         /*
                   x, y, width, height,
@@ -114,11 +130,6 @@ Win32MainWindowCallback(HWND window, UINT message,
     {
         case WM_SIZE:
         {
-            RECT clientRect;
-            GetClientRect(window, &clientRect);
-            int drawWidth = clientRect.right - clientRect.left;
-            int drawHeight = clientRect.bottom - clientRect.top;
-            Win32ResizeDIBSection(&globalBackBuffer, drawWidth, drawHeight);
             OutputDebugString( "WM_SIZE Detected\n" );
             break;
         }
@@ -151,10 +162,8 @@ Win32MainWindowCallback(HWND window, UINT message,
             int paintWidth = paint.rcPaint.right - paintX;
             int paintHeight = paint.rcPaint.bottom - paintY;
 
-            RECT clientRect;
-            GetClientRect( window, &clientRect );
-
-            Win32BlitToWindow(deviceContext, clientRect,globalBackBuffer , paintX, paintY, paintWidth, paintHeight );
+            win32WindowDimension dim = Win32GetWindowDimension( window );
+            Win32BlitToWindow(deviceContext, dim.dimX, dim.dimY, globalBackBuffer , paintX, paintY, paintWidth, paintHeight );
             EndPaint(window, &paint);
             break;
         }
@@ -177,6 +186,9 @@ WinMain( HINSTANCE instance, HINSTANCE prevInstance,
     //           "HMH #001", MB_OK | MB_ICONINFORMATION);
 
     WNDCLASS WindowClass = {};
+    
+    Win32ResizeDIBSection( &globalBackBuffer, 1280, 720);
+
     WindowClass.style = CS_HREDRAW | CS_VREDRAW;
     WindowClass.lpfnWndProc = Win32MainWindowCallback;
     WindowClass.hInstance = instance;
@@ -216,14 +228,12 @@ WinMain( HINSTANCE instance, HINSTANCE prevInstance,
                  
                 RenderWeirdGradient(globalBackBuffer, offsetX, offsetY );
                 HDC deviceContext = GetDC( windowHandle );
-                RECT clientRect;
-                GetClientRect( windowHandle, &clientRect );
-                int windowWidth = clientRect.right - clientRect.left;
-                int windowHeight = clientRect.bottom - clientRect.top;
-                Win32BlitToWindow( deviceContext, clientRect,globalBackBuffer , 0, 0, windowWidth, windowHeight );
+                win32WindowDimension dim = Win32GetWindowDimension( windowHandle );
+                Win32BlitToWindow( deviceContext, dim.dimX, dim.dimY, globalBackBuffer, 0, 0, dim.dimX, dim.dimY);
                 ReleaseDC( windowHandle, deviceContext);
-                
+
                 ++offsetX;
+                ++offsetY;
             }
         }
         else
