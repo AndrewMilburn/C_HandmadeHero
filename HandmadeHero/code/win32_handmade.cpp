@@ -109,6 +109,7 @@ internal void
 Win32BlitToWindow(HDC deviceContext, int windowWidth, int windowHeight,
                   win32BackBuffer buffer, int x, int y, int width, int height )
 {
+    // todo: Aspect Ratio correction
     StretchDIBits(deviceContext,
         /*
                   x, y, width, height,
