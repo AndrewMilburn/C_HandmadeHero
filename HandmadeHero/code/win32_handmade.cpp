@@ -19,12 +19,12 @@ typedef int64_t int64;
 
 struct win32BackBuffer
 {
+    // NOTE: Pixels are alwasy 32-bits wide, Memory Order BB GG RR XX
     BITMAPINFO bitmapInfo;
     void* bitmapMemory;
     int bitmapWidth;
     int bitmapHeight;
     int bitmapPitch;
-    int bytesPerPixel;
 };
 
 struct win32WindowDimension
@@ -34,7 +34,7 @@ struct win32WindowDimension
 };
 
 // todo This is a global for now, but in future we'll call it from within the program
-globalVar bool isRunning;
+globalVar bool GlobalRunning;
 globalVar win32BackBuffer globalBackBuffer;
 
 win32WindowDimension
@@ -90,7 +90,12 @@ Win32ResizeDIBSection(win32BackBuffer *buffer, int width, int height )
 
     buffer->bitmapWidth = width;
     buffer->bitmapHeight = height;
-    buffer->bytesPerPixel = 4;
+    int bytesPerPixel = 4;
+    // NOTE: When the biHeight field is negative, this is the clue to
+    // Windows to treat this bitmap as top-down, not bottom-up, meaning that
+    // the first three bytes of the image are the color for the top left pixel
+    // in the bitmap, not the bottom left!
+
     buffer->bitmapInfo.bmiHeader.biSize = sizeof( buffer->bitmapInfo.bmiHeader );
     buffer->bitmapInfo.bmiHeader.biWidth = buffer->bitmapWidth;
     buffer->bitmapInfo.bmiHeader.biHeight = -buffer->bitmapHeight;
@@ -98,16 +103,16 @@ Win32ResizeDIBSection(win32BackBuffer *buffer, int width, int height )
     buffer->bitmapInfo.bmiHeader.biBitCount = 32;
     buffer->bitmapInfo.bmiHeader.biCompression = BI_RGB;
 
-    int bitmapMemorySize = buffer->bytesPerPixel * (buffer->bitmapWidth * buffer->bitmapHeight);
+    int bitmapMemorySize = bytesPerPixel * (buffer->bitmapWidth * buffer->bitmapHeight);
     buffer->bitmapMemory = VirtualAlloc(0, bitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
     // todo - Probably Clear this to Black later
-    buffer->bitmapPitch = width * buffer->bytesPerPixel;
+    buffer->bitmapPitch = width * bytesPerPixel;
 }
 
 // Write From the Back-Buffer
 internal void
 Win32BlitToWindow(HDC deviceContext, int windowWidth, int windowHeight,
-                  win32BackBuffer buffer, int x, int y, int width, int height )
+                  win32BackBuffer buffer)
 {
     // todo: Aspect Ratio correction
     StretchDIBits(deviceContext,
@@ -129,42 +134,29 @@ Win32MainWindowCallback(HWND window, UINT message,
 
     switch (message)
     {
-        case WM_SIZE:
-        {
-            OutputDebugString( "WM_SIZE Detected\n" );
-            break;
-        }
-
         case WM_CLOSE:
         {
             // todo Handle this with message to user / saving code etc.
-            isRunning = false;
-            OutputDebugString( "WM_CLOSE Detected\n" );
+            GlobalRunning = false;
             break;
         }
         case WM_ACTIVATEAPP:
         {
-            OutputDebugString( "WM_ACTIVATEAPP Detected\n" );
             break;
         }
         case WM_DESTROY:
         {
             // todo Handle this with message to user / saving code etc.
-            isRunning = false;
-            OutputDebugString( "WM_DESTROY Detected\n" );
+            GlobalRunning = false;
             break;
         }
         case WM_PAINT:
         {
             PAINTSTRUCT paint;
             HDC deviceContext = BeginPaint(window, &paint);
-            int paintX = paint.rcPaint.left;
-            int paintY = paint.rcPaint.top;
-            int paintWidth = paint.rcPaint.right - paintX;
-            int paintHeight = paint.rcPaint.bottom - paintY;
 
             win32WindowDimension dim = Win32GetWindowDimension( window );
-            Win32BlitToWindow(deviceContext, dim.dimX, dim.dimY, globalBackBuffer , paintX, paintY, paintWidth, paintHeight );
+            Win32BlitToWindow(deviceContext, dim.dimX, dim.dimY, globalBackBuffer);
             EndPaint(window, &paint);
             break;
         }
@@ -183,14 +175,11 @@ int  CALLBACK
 WinMain( HINSTANCE instance, HINSTANCE prevInstance,
          LPSTR cmdLine, int showCmd)
 {
-    //MessageBox(0, "Hello Handmade Hero",
-    //           "HMH #001", MB_OK | MB_ICONINFORMATION);
-
     WNDCLASS WindowClass = {};
     
     Win32ResizeDIBSection( &globalBackBuffer, 1280, 720);
 
-    WindowClass.style = CS_HREDRAW | CS_VREDRAW;
+    WindowClass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
     WindowClass.lpfnWndProc = Win32MainWindowCallback;
     WindowClass.hInstance = instance;
     //WindowClass.hIcon;
@@ -211,17 +200,22 @@ WinMain( HINSTANCE instance, HINSTANCE prevInstance,
 
         if(windowHandle)
         {
+            // NOTE(casey): Since we specified CS_OWNDC, we can just
+            // get one device context and use it forever because we
+            // are not sharing it with anyone.
+            HDC deviceContext = GetDC( windowHandle );
+
             int offsetX = 0;
             int offsetY = 0;
-            isRunning = true;
-            while(isRunning)
+            GlobalRunning = true;
+            while(GlobalRunning)
             {
                 MSG message;
                 while(PeekMessage( &message, 0, 0, 0, PM_REMOVE ))
                 {
                     if(message.message == WM_QUIT)
                     {
-                        isRunning = false;
+                        GlobalRunning = false;
                     }
                     TranslateMessage( &message );
                     DispatchMessage( &message );
@@ -230,7 +224,7 @@ WinMain( HINSTANCE instance, HINSTANCE prevInstance,
                 RenderWeirdGradient(globalBackBuffer, offsetX, offsetY );
                 HDC deviceContext = GetDC( windowHandle );
                 win32WindowDimension dim = Win32GetWindowDimension( windowHandle );
-                Win32BlitToWindow( deviceContext, dim.dimX, dim.dimY, globalBackBuffer, 0, 0, dim.dimX, dim.dimY);
+                Win32BlitToWindow( deviceContext, dim.dimX, dim.dimY, globalBackBuffer);
                 ReleaseDC( windowHandle, deviceContext);
 
                 ++offsetX;
