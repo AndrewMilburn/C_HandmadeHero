@@ -2,6 +2,7 @@
 
 #include <windows.h>
 #include <stdint.h>
+#include <Xinput.h>
 
 #define localPersist static
 #define globalVar static
@@ -219,6 +220,20 @@ WinMain( HINSTANCE instance, HINSTANCE prevInstance,
                     }
                     TranslateMessage( &message );
                     DispatchMessage( &message );
+                }
+
+                // todo: Should we poll this more frequently
+                for(DWORD controllerIndex = 0; controllerIndex < XUSER_MAX_COUNT; controllerIndex++)
+                {
+                    XINPUT_STATE controllerState;
+                    if(XInputGetState( controllerIndex, &controllerState ) == ERROR_SUCCESS)
+                    {
+                        // Controller is plugged in
+                    }
+                    else
+                    {
+                        // Controller not available
+                    }
                 }
                  
                 RenderWeirdGradient(globalBackBuffer, offsetX, offsetY );
