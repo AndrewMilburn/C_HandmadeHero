@@ -2,7 +2,8 @@
 
 #include <windows.h>
 #include <stdint.h>
-#include <Xinput.h>
+#include <xinput.h>
+
 
 #define localPersist static
 #define globalVar static
@@ -17,6 +18,26 @@ typedef int8_t int8;
 typedef int16_t int16;
 typedef int32_t int32;
 typedef int64_t int64;
+
+// Get Controller states
+#define X_INPUT_GET_STATE(name) DWORD WINAPI name( DWORD dwUserIndex, XINPUT_STATE* pState )
+typedef X_INPUT_GET_STATE( x_input_get_state );
+X_INPUT_GET_STATE( xInputGetStateStub )
+{
+    return(0);
+}
+globalVar x_input_get_state* XInputGetState_ = xInputGetStateStub;
+
+// Set Controller states
+#define X_INPUT_SET_STATE(name) DWORD WINAPI name( DWORD dwUserIndex, XINPUT_VIBRATION* pVibration )
+typedef X_INPUT_SET_STATE( x_input_set_state );
+X_INPUT_SET_STATE( xInputSetStateStub )
+{
+    return(0);
+}
+globalVar x_input_set_state* XInputSetState_ = xInputSetStateStub;
+#define XInputGetState XInputGetState_
+#define XInputSetState XInputSetState_
 
 struct win32BackBuffer
 {
@@ -229,6 +250,22 @@ WinMain( HINSTANCE instance, HINSTANCE prevInstance,
                     if(XInputGetState( controllerIndex, &controllerState ) == ERROR_SUCCESS)
                     {
                         // Controller is plugged in
+                        // todo: See if DWORD dwPacketNumber; updates too rapidly
+                        XINPUT_GAMEPAD* pad = &controllerState.Gamepad;
+                        bool padUp = (pad->wButtons & XINPUT_GAMEPAD_DPAD_UP);
+                        bool padDown = (pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN);
+                        bool padLeft = (pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT);
+                        bool padRight = (pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT);
+                        bool padStart = (pad->wButtons & XINPUT_GAMEPAD_START);
+                        bool padBack = (pad->wButtons & XINPUT_GAMEPAD_BACK);
+                        bool padLeftShoulder = (pad->wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER);
+                        bool padRightShoulder = (pad->wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER);
+                        bool padA = (pad->wButtons & XINPUT_GAMEPAD_A);
+                        bool padB = (pad->wButtons & XINPUT_GAMEPAD_B);
+                        bool padX = (pad->wButtons & XINPUT_GAMEPAD_X);
+                        bool padY = (pad->wButtons & XINPUT_GAMEPAD_Y);
+                        int16 padStickX = pad->sThumbLX;
+                        int16 padStickY = pad->sThumbLY;
                     }
                     else
                     {
