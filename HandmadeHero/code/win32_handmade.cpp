@@ -19,7 +19,10 @@ typedef int16_t int16;
 typedef int32_t int32;
 typedef int64_t int64;
 
-// Get Controller states
+#define XInputGetState XInputGetState_
+#define XInputSetState XInputSetState_
+
+// Get Controller states ----------------------------------------------------------------------
 #define X_INPUT_GET_STATE(name) DWORD WINAPI name( DWORD dwUserIndex, XINPUT_STATE* pState )
 typedef X_INPUT_GET_STATE( x_input_get_state );
 X_INPUT_GET_STATE( xInputGetStateStub )
@@ -27,8 +30,8 @@ X_INPUT_GET_STATE( xInputGetStateStub )
     return(0);
 }
 globalVar x_input_get_state* XInputGetState_ = xInputGetStateStub;
-
-// Set Controller states
+// --------------------------------------------------------------------------------------------
+// Set Controller states ----------------------------------------------------------------------
 #define X_INPUT_SET_STATE(name) DWORD WINAPI name( DWORD dwUserIndex, XINPUT_VIBRATION* pVibration )
 typedef X_INPUT_SET_STATE( x_input_set_state );
 X_INPUT_SET_STATE( xInputSetStateStub )
@@ -36,8 +39,7 @@ X_INPUT_SET_STATE( xInputSetStateStub )
     return(0);
 }
 globalVar x_input_set_state* XInputSetState_ = xInputSetStateStub;
-#define XInputGetState XInputGetState_
-#define XInputSetState XInputSetState_
+// --------------------------------------------------------------------------------------------
 
 struct win32BackBuffer
 {
@@ -59,7 +61,13 @@ struct win32WindowDimension
 globalVar bool GlobalRunning;
 globalVar win32BackBuffer globalBackBuffer;
 
-win32WindowDimension
+internal void
+Win32LoadXInput( void )
+{
+    HMODULE LoadLibrary(LPCWSTR lpLibFileName);
+}
+
+internal win32WindowDimension
 Win32GetWindowDimension( HWND window )
 {
     win32WindowDimension result;
